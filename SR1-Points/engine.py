@@ -12,7 +12,6 @@ while continuar:
     opcion = int(input("Ingresa un numero del menu: "))
     if(opcion == 1):
         bitmap = Render(1000, 1000,0, 0, 0)
-        bitmap.glClearColor(1,0,0) 
         bitmap.glViewPort(250, 250, 500 , 500)
         bitmap.glVertex(0, 0)
         bitmap.glFinish('output.bmp')
