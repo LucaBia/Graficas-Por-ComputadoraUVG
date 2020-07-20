@@ -26,11 +26,10 @@ LIGHT_GREEN = color(128,255,0)
 
 class Render(object):
     # glInit()
-    def __init__(self, width, height, r, g, b):
+    def __init__(self, width, height):
         self.glCreateWindow(width, height)
         self.bitmap_color = BLACK
         self.pixel_color = LIGHT_GREEN
-        self.glClearColor(r, g, b)
         self.glClear()
 
     # Llena el mapa de bits con un solo color
@@ -64,6 +63,10 @@ class Render(object):
         # (+1)(height/2)+y
         vertexY = int((y+1)*(self.viewPortHeight/2)+self.viewPortY)
         self.pixels[vertexY][vertexX] = self.pixel_color
+
+    # Cambia el color de una linea en la pantalla
+    def glVertexCoord(self, x, y):
+        self.pixels[y][x] = self.pixel_color
 
     # Cambia el color con el que funciona glVertex()
     def glColor(self, r, g, b):
@@ -103,3 +106,51 @@ class Render(object):
                 document.write(self.pixels[x][y])
 
         document.close()
+
+    # Algortimo de Bresenham
+    def glLine(self, x0, y0, x1, y1):
+        # NDC a pixeles
+        x0 = int((x0 + 1) * (self.viewPortWidth/2) + self.viewPortX)
+        x1 = int((x1 + 1) * (self.viewPortWidth/2) + self.viewPortX)
+        y0 = int((y0 + 1) * (self.viewPortHeight/2) + self.viewPortY)
+        y1 = int((y1 + 1) * (self.viewPortHeight/2) + self.viewPortY)
+
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+
+        # inclinacion
+        inclination = dy > dx
+
+        # si la diferencia en y es mayor a la diferencia en x (mayor a 45º), se recalcula la pendiente
+        # de manera que x tenga los valores de Y y viceversa
+        if inclination:
+            x0, y0 = y0, x0
+            x1, y1 = y1, x1
+
+        if x0 > x1:
+            x0, x1 = x1, x0
+            y0, y1 = y1, y0
+        
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+
+        offset = 0 
+        limit = 0.5
+
+        m = dy/dx
+        y = y0
+
+        # Dibujo
+        for x in range(x0, x1+1):
+            if inclination:
+                self.glVertexCoord(y, x)
+            else:
+                self.glVertexCoord(x, y)
+
+            offset += m
+
+            if offset >= limit:
+                y += 1 if y0 < y1 else -1
+                limit += 1
+
+
