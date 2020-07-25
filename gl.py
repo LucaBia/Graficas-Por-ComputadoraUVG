@@ -2,6 +2,7 @@
 
 # https://docs.python.org/3/library/struct.html
 import struct
+from obj import Obj
 
 # Format characters
 # 1 byte
@@ -153,4 +154,63 @@ class Render(object):
                 y += 1 if y0 < y1 else -1
                 limit += 1
 
+    def glLineCoord(self, x0, y0, x1, y1):
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
 
+        # inclinacion
+        inclination = dy > dx
+
+        # si la diferencia en y es mayor a la diferencia en x (mayor a 45º), se recalcula la pendiente
+        # de manera que x tenga los valores de Y y viceversa
+        if inclination:
+            x0, y0 = y0, x0
+            x1, y1 = y1, x1
+
+        if x0 > x1:
+            x0, x1 = x1, x0
+            y0, y1 = y1, y0
+        
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+
+        offset = 0 
+        limit = 0.5
+
+        # Si hay una division entre cero, se ignora
+        try:
+            m = dy/dx
+        except ZeroDivisionError:
+            pass
+        else:
+            y = y0
+
+            for x in range(x0, x1+1):
+                if inclination:
+                    self.glVertexCoord(y, x)
+                else:
+                    self.glVertexCoord(x, y)
+
+                offset += m
+
+                if offset >= limit:
+                    y += 1 if y0 < y1 else -1
+                    limit += 1
+
+    #  Modelo OBJ
+    def loadObjModel(self, filename, translate, scale):
+        model = Obj(filename)
+
+        for face in model.faces:
+            vertCount = len(face)
+
+            for vert in range(vertCount):
+                v0 = model.vertices[face[vert][0]-1]
+                v1 = model.vertices[face[(vert + 1) % vertCount][0] - 1]
+
+                x0 = round(v0[0] * scale[0]  + translate[0])
+                y0 = round(v0[1] * scale[1]  + translate[1])
+                x1 = round(v1[0] * scale[0]  + translate[0])
+                y1 = round(v1[1] * scale[1]  + translate[1])
+
+                self.glLineCoord(x0, y0, x1, y1)
