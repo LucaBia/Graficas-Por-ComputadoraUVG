@@ -3,9 +3,10 @@
 from gl import Render
 
 bitmap = Render(2000, 2000)
-bitmap.glViewPort(250, 250, 500 , 500)
+bitmap.glViewPort(0, 0, 2000 , 2000)
 bitmap.glClearColor(0,0,0)
 bitmap.glClear()
+
 
 # ---------------------------
 # Dibujo de puntos
@@ -40,9 +41,10 @@ bitmap.glClear()
 # bitmap.glLine(0,0,1,-0.5)
 # bitmap.glLine(0,0,0,-1)
 
-bitmap.loadObjModel('./Models/coffee.obj', (1000,400), (80,80))
+bitmap.loadObjModel('./Models/coffee.obj', (1000, 400, 0), (80, 80, 80))
 
 bitmap.glFinish('output.bmp')
+bitmap.glZBuffer('outputZbuffer.bmp')
 
 print("El bitmap se genero exitosamente, revisa la carpeta contenedora")
 
