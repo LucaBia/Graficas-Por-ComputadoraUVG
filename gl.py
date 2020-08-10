@@ -85,6 +85,7 @@ def color(r, g, b):
 
 
 BLACK = color(0,0,0)
+WHITE = color(1,1,1)
 LIGHT_GREEN = color(0.5,1,0)
 
 
@@ -320,7 +321,7 @@ class Render(object):
 
 
     #  Modelo OBJ
-    def loadObjModel(self, filename, translate, scale, isWireframe = False):
+    def loadObjModel(self, filename, translate, scale, isWireframe = False, texture = None):
         model = Obj(filename)
 
         # Coordenadas del vector de luz, equivalente a V3(0,0,1)
@@ -356,6 +357,31 @@ class Render(object):
                 y2 = int(v2[1] * scale[1]  + translate[1])
                 z2 = int(v2[2] * scale[2]  + translate[2])
 
+                # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
+                if vertCount > 3: 
+                    v3 = model.vertices[face[3][0] - 1]
+                    x3 = int(v3[0] * scale[0]  + translate[0])
+                    y3 = int(v3[1] * scale[1]  + translate[1])
+                    z3 = int(v3[2] * scale[2]  + translate[2])
+
+
+                if texture:
+                    vt0 = model.texcoords[face[0][1] - 1]
+                    vt1 = model.texcoords[face[1][1] - 1]
+                    vt2 = model.texcoords[face[2][1] - 1]
+                    vt0X, vt0Y = vt0[0], vt0[1]
+                    vt1X, vt1Y = vt1[0], vt1[1]
+                    vt2X, vt2Y = vt2[0], vt2[1]
+
+                    if vertCount > 3:
+                        vt3 = model.texcoords[face[3][1] - 1]
+                        vt3X, vt3Y = vt3[0], vt3[1]
+                else:
+                    vt0X, vt0Y = 0, 0
+                    vt1X, vt1Y = 0, 0
+                    vt2X, vt2Y = 0, 0
+                    vt3X, vt3Y = 0, 0
+
                 # Operaciones para el calculo de la normal
                 sub1 = sub(x1, x0, y1, y0, z1, z0)
                 sub2 = sub(x2, x0, y2, y0, z2, z0)
@@ -367,20 +393,14 @@ class Render(object):
                 intensity = dot(normal, lightX, lightY, lightZ)
 
                 if intensity >= 0:
-                    self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(intensity, intensity, intensity))
+                    if vertCount > 3:
+                        self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0X, vt2X, vt3X, vt0Y, vt2Y, vt3Y, texture = texture, intensity = intensity)
+                    self.triangle_bc(x0, x1, x2, y0, y1, y2, z0, z1, z2, vt0X, vt1X, vt2X, vt0Y, vt1Y, vt2Y, texture = texture, intensity = intensity)
+                 
                 
-                # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
-                if vertCount > 3: 
-                    v3 = model.vertices[face[3][0] - 1]
-                    x3 = int(v3[0] * scale[0]  + translate[0])
-                    y3 = int(v3[1] * scale[1]  + translate[1])
-                    z3 = int(v3[2] * scale[2]  + translate[2])
-
-                    if intensity >= 0:
-                        self.triangle_bc(x0,x2,x3, y0, y2,y3, z0, z2,z3, color(intensity, intensity, intensity))
 
     #Barycentric Coordinates
-    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, color = None):
+    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, taX, tbX, tcX, taY, tbY, tcY, _color = WHITE, texture = None, intensity = 1):
         minX = min(Ax, Bx, Cx)
         minY = min(Ay, By, Cy)
         maxX = max(Ax, Bx, Cx)
@@ -388,12 +408,32 @@ class Render(object):
 
         for x in range(minX, maxX + 1):
             for y in range(minY, maxY + 1):
+                if x >= self.width or x < 0 or y >= self.height or y < 0:
+                    continue
+
                 u, v, w = baryCoords(Ax, Bx, Cx, Ay, By, Cy, x,y)
 
                 if u >= 0 and v >= 0 and w >= 0:
-
                     z = Az * u + Bz * v + Cz * w
-
                     if z > self.zbuffer[y][x]:
-                        self.glVertexCoord(x, y, color)
+                        b, g , r = _color #Revisar color
+                        b /= 255
+                        g /= 255
+                        r /= 255
+
+                        b *= intensity
+                        g *= intensity
+                        r *= intensity
+
+                        if texture:
+                            # ta, tb, tc = texcoords
+                            tx = taX * u + tbX * v + tcX * w
+                            ty = taY * u + tbY * v + tcY * w
+
+                            texColor = texture.getColor(tx, ty)
+                            b *= texColor[0] / 255
+                            g *= texColor[1] / 255
+                            r *= texColor[2] / 255
+
+                        self.glVertexCoord(x, y, color(r, g, b))
                         self.zbuffer[y][x] = z
