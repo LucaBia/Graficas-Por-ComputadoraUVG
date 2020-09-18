@@ -2,22 +2,23 @@
 # Librerias matematicas
 # ----------------------
 
-# Suma de vectores de 3 elementos
-def sum(x0, x1, y0, y1, z0, z1):
-    arr_sum = []
-    arr_sum.extend((x0 + x1, y0 + y1, z0 + z1))
-    return arr_sum
-
-# Resta de vectores de 2 elementos
-def sub(x0, x1, y0, y1):
-    arr_sub = []
-    arr_sub.extend((x0 - x1, y0 - y1))
-    return arr_sub
+def sumVectors(vec1, vec2):
+    sumList = []
+    sumList.extend((vec1[0] + vec2[0], vec1[1] + vec2[1], vec1[2] + vec2[2]))
+    return sumList
 
 def subVectors(vec1, vec2):
     subList = []
     subList.extend((vec1[0] - vec2[0], vec1[1] - vec2[1], vec1[2] - vec2[2]))
     return subList
+
+def mulVectors(vec1, vec2):
+    mulList = []
+    mulList.extend((vec1[0] * vec2[0], vec1[1] * vec2[1], vec1[2] * vec2[2]))
+    return mulList
+
+def dotVectors(v0, v1):
+    return ((v0[0] * v1[0]) + (v0[1] * v1[1]) + (v0[2] * v1[2]))
     
 # Producto cruz entre dos vectores
 def cross(v0, v1):
@@ -25,33 +26,15 @@ def cross(v0, v1):
     arr_cross.extend((v0[1] * v1[2] - v1[1] * v0[2], -(v0[0] * v1[2] - v1[0] * v0[2]), v0[0] * v1[1] - v1[0] * v0[1]))
     return arr_cross
 
+# Multiplicacion de un escalar con un vector de 3 elementos
+def multiply(dotNumber, normal):
+    arrMul = []
+    arrMul.extend((dotNumber * normal[0], dotNumber * normal[1], dotNumber * normal[2]))
+    return arrMul
 
-def dotVectors(v0, v1):
-    return ((v0[0] * v1[0]) + (v0[1] * v1[1]) + (v0[2] * v1[2]))
-
-# Calculo de la normal de un vector
-def norm(v0):
-    if (v0 == 0):
-        arr0_norm = []
-        arr0_norm.extend((0,0,0))
-        return arr0_norm
-
-    return((v0[0]**2 + v0[1]**2 + v0[2]**2)**(1/2))
-
-# Igual que la anterior, calculo de la normal pero sin validacion
+# Calculo de la normal
 def frobeniusNorm(v0):
-        return((v0[0]**2 + v0[1]**2 + v0[2]**2)**(1/2))
-
-# Division vector con normal
-def div(v0, norm):
-    if (norm == 0):
-        arr0_norm = []
-        arr0_norm.extend((0,0,0))
-        return arr0_norm
-    else:
-        arr_div = []
-        arr_div.extend((v0[0] / norm, v0[1] / norm, v0[2] / norm))
-        return arr_div
+    return((v0[0]**2 + v0[1]**2 + v0[2]**2)**(1/2))
 
 # Crea una matriz llena de ceros
 def zeros_matrix(rows, cols):
@@ -128,14 +111,6 @@ def inverse(a):
     for i in range(len(tmp)):
         ret.append(tmp[i][len(tmp[i])//2:])
     return ret
-# ---------------------------------------------
-
-# Multiplicacion dos vectores de 3 elementos
-def multiply(dotNumber, normal):
-    arrMul = []
-    arrMul.extend((dotNumber * normal[0], dotNumber * normal[1], dotNumber * normal[2]))
-    return arrMul
-
 
 def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
     try:

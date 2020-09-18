@@ -4,7 +4,7 @@ import struct
 from obj import Obj
 from mathLib import *
 
-import numpy
+import numpy as np
 from numpy import tan
 
 
@@ -43,6 +43,9 @@ class Raytracer(object):
         self.fov = 60
 
         self.scene = []
+
+        self.pointLight = None
+        self.ambientLight = None
 
     # Inicializacion del tamaño del framebuffer
     def glCreateWindow(self, width, height):
@@ -188,16 +191,72 @@ class Raytracer(object):
                 Py *= t
 
                 direction = (Px, Py, -1)
-                direction = div(direction, frobeniusNorm(direction))
+                direction = direction / frobeniusNorm(direction)
 
                 material = None
+                intersect = None
 
                 for obj in self.scene:
-                    intersect = obj.ray_intersect(self.camPosition, direction)
-                    if intersect is not None:
-                        if intersect.distance < self.zbuffer[y][x]:
-                            self.zbuffer[y][x] = intersect.distance
+                    hit = obj.ray_intersect(self.camPosition, direction)
+                    if hit is not None:
+                        if hit.distance < self.zbuffer[y][x]:
+                            self.zbuffer[y][x] = hit.distance
                             material = obj.material
+                            intersect = hit
 
-                if material is not None:
-                    self.glVertexCoord(x, y, material.diffuse)
+                if intersect is not None:
+                    self.glVertexCoord(x, y, self.pointColor(material, intersect))
+
+    def pointColor(self, material, intersect):
+
+        objectColor = [material.diffuse[2] / 255,
+                       material.diffuse[1] / 255,
+                       material.diffuse[0] / 255]
+
+        ambientColor = [0,0,0]
+        diffuseColor = [0,0,0]
+        specColor = [0,0,0]
+
+        shadow_intensity = 0
+
+        if self.ambientLight:
+            ambientColor = [self.ambientLight.strength * self.ambientLight.color[2] / 255,
+                            self.ambientLight.strength * self.ambientLight.color[1] / 255,
+                            self.ambientLight.strength * self.ambientLight.color[0] / 255]
+
+        if self.pointLight:
+            light_dir = subVectors(self.pointLight.position, intersect.point)
+            light_dir = light_dir / frobeniusNorm(light_dir)
+
+            intensity = self.pointLight.intensity * max(0, dotVectors(light_dir, intersect.normal))
+            diffuseColor = [intensity * self.pointLight.color[2] / 255,
+                            intensity * self.pointLight.color[1] / 255,
+                            intensity * self.pointLight.color[2] / 255]
+
+            view_dir = subVectors(self.camPosition, intersect.point)
+            view_dir = view_dir / frobeniusNorm(view_dir)
+
+            reflect = 2 * dotVectors(intersect.normal, light_dir)
+            reflect = multiply(reflect, intersect.normal)
+            reflect = subVectors(reflect, light_dir)
+
+            spec_intensity = self.pointLight.intensity * (max(0, dotVectors(view_dir, reflect)) ** material.spec)
+
+            specColor = [spec_intensity * self.pointLight.color[2] / 255,
+                         spec_intensity * self.pointLight.color[1] / 255,
+                         spec_intensity * self.pointLight.color[0] / 255]
+
+            for obj in self.scene:
+                if obj is not intersect.sceneObject:
+                    hit = obj.ray_intersect(intersect.point,  light_dir)
+                    if hit is not None and intersect.distance < frobeniusNorm(subVectors(self.pointLight.position, intersect.point)):
+                        shadow_intensity = 1
+
+
+        finalColor = mulVectors(sumVectors(ambientColor, multiply((1 - shadow_intensity), sumVectors(diffuseColor, specColor))), objectColor)
+
+        r = min(1,finalColor[0])
+        g = min(1,finalColor[1])
+        b = min(1,finalColor[2])
+
+        return color(r, g, b)
