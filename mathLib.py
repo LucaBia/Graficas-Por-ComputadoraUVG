@@ -2,6 +2,8 @@
 # Librerias matematicas
 # ----------------------
 
+pi = 3.141592653589793
+
 def sumVectors(vec1, vec2):
     sumList = []
     sumList.extend((vec1[0] + vec2[0], vec1[1] + vec2[1], vec1[2] + vec2[2]))
@@ -31,6 +33,11 @@ def multiply(dotNumber, normal):
     arrMul = []
     arrMul.extend((dotNumber * normal[0], dotNumber * normal[1], dotNumber * normal[2]))
     return arrMul
+
+def divVN(v, n):
+    arrDiv = []
+    arrDiv.extend((v[0] / n, v[1] / n, v[2] / n))
+    return arrDiv
 
 # Calculo de la normal
 def frobeniusNorm(v0):
