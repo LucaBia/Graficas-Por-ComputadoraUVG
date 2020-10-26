@@ -10,7 +10,13 @@ colors = {
     '1' : (31,54,61),
     '2' : (64, 121, 140),
     '3' : (112, 169, 161)
-    }
+}
+
+textures = {
+    '1' : pygame.image.load('Scifi_Wall_Black.jpg'),
+    '2' : pygame.image.load('Scifi_Wall_White.jpg'),
+    '3' : pygame.image.load('Scifi_Wall_Copper.jpg'),
+}
 
 
 class Raycaster(object):
@@ -21,7 +27,7 @@ class Raycaster(object):
         self.blocksize = 50
         self.wallHeight = 50
         self.stepSize = 5
-        self.setColor(WHITE)
+        # self.setColor(WHITE)
         self.player = {
             "x" : 75,
             "y" : 175,
@@ -29,20 +35,23 @@ class Raycaster(object):
             "fov" : 60
             }
 
-    def setColor(self, color):
-        self.blockColor = color
+    # def setColor(self, color):
+    #     self.blockColor = color
 
     def load_map(self, filename):
         with open(filename) as f:
             for line in f.readlines():
                 self.map.append(list(line))
 
-    def drawRect(self, x, y, color = WHITE):
-        rect = (x, y, self.blocksize, self.blocksize)
-        self.screen.fill(color, rect)
+    def drawRect(self, x, y, tex):
+        tex = pygame.transform.scale(tex, (self.blocksize, self.blocksize))
+        rect = tex.get_rect()
+        rect = rect.move( (x,y) )
+        self.screen.blit(tex, rect)
+
 
     def drawPlayerIcon(self,color):
-        rect = (self.player['x'] - 2, self.player['y'] - 2, 5, 5)
+        rect = (int(self.player['x'] - 2), int(self.player['y'] - 2), 5, 5)
         self.screen.fill(color, rect)
 
     def castRay(self, a):
@@ -56,11 +65,22 @@ class Raycaster(object):
             j = int(y/self.blocksize)
 
             if self.map[j][i] != ' ':
-                return dist, self.map[j][i]
+                hitX = x - i*self.blocksize
+                hitY = y - j*self.blocksize
+
+                if 1 < hitX < self.blocksize - 1:
+                    maxHit = hitX
+                else:
+                    maxHit = hitY
+
+                tx = maxHit / self.blocksize
+                
+                return dist, self.map[j][i], tx
 
             self.screen.set_at((x,y), WHITE)
 
-            dist += 5
+            # dist += 5
+            dist += 2
 
     def render(self):
 
@@ -74,13 +94,13 @@ class Raycaster(object):
                 j = int(y/self.blocksize)
 
                 if self.map[j][i] != ' ':
-                    self.drawRect(x, y, colors[self.map[j][i]])
+                    self.drawRect(x, y, textures[self.map[j][i]])
 
         self.drawPlayerIcon(BLACK)
 
         for i in range(halfWidth):
             angle = self.player['angle'] - self.player['fov']/2 + self.player['fov'] * i/halfWidth
-            dist, c = self.castRay(angle)
+            dist, wallType, tx = self.castRay(angle)
 
             x = halfWidth + i 
 
@@ -89,10 +109,14 @@ class Raycaster(object):
             start = int( halfHeight - h/2)
             end = int( halfHeight + h/2)
 
+            img = textures[wallType]
+            tx = int(tx * img.get_width())
+
             for y in range(start, end):
-                self.screen.set_at((x, y), colors[c])
-
-
+                ty = (y - start)/(end - start)
+                ty = int(ty * img.get_height())
+                texColor = img.get_at((tx, ty))
+                self.screen.set_at((x, y), texColor)
 
         for i in range(self.height):
             self.screen.set_at( (halfWidth, i), BLACK)
@@ -101,46 +125,70 @@ class Raycaster(object):
 
 
 pygame.init()
-screen = pygame.display.set_mode((1000,500))
+screen = pygame.display.set_mode((1000,500), pygame.DOUBLEBUF | pygame.HWACCEL)
+screen.set_alpha(None)
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("Arial", 30)
+
+def updateFPS():
+    fps = str(int(clock.get_fps()))
+    fps = font.render(fps, 1, pygame.Color("white"))
+    return fps
 
 r = Raycaster(screen)
 
-r.setColor( (128,0,0) )
+# r.setColor( (128,0,0) )
 r.load_map('map.txt')
 
 isRunning = True
-
 while isRunning:
-
     for ev in pygame.event.get():
         if ev.type == pygame.QUIT:
             isRunning = False
+
+        newX = r.player['x']
+        newY = r.player['y']
 
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_ESCAPE:
                 # Cierra el juego
                 isRunning = False
             elif ev.key == pygame.K_w or ev.key == pygame.K_UP:
-                r.player['x'] += cos(r.player['angle'] * pi / 180) * r.stepSize
-                r.player['y'] += sin(r.player['angle'] * pi / 180) * r.stepSize
+                newX += cos(r.player['angle'] * pi / 180) * r.stepSize
+                newY += sin(r.player['angle'] * pi / 180) * r.stepSize
             elif ev.key == pygame.K_s or ev.key == pygame.K_DOWN:
-                r.player['x'] -= cos(r.player['angle'] * pi / 180) * r.stepSize
-                r.player['y'] -= sin(r.player['angle'] * pi / 180) * r.stepSize
+                newX -= cos(r.player['angle'] * pi / 180) * r.stepSize
+                newY -= sin(r.player['angle'] * pi / 180) * r.stepSize 
             elif ev.key == pygame.K_a or ev.key == pygame.K_LEFT:
-                r.player['x'] -= cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
-                r.player['y'] -= sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                newX -= cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                newY -= sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
             elif ev.key == pygame.K_d or ev.key == pygame.K_RIGHT:
-                r.player['x'] += cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
-                r.player['y'] += sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                newX += cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                newY += sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
             elif ev.key == pygame.K_q or ev.key == pygame.K_z:
                 r.player['angle'] -= 5
             elif ev.key == pygame.K_e or ev.key == pygame.K_x:
                 r.player['angle'] += 5
 
-    screen.fill(BACKGROUND)
+            i = int(newX/r.blocksize)
+            j = int(newY/r.blocksize)
+
+            if r.map[j][i] == ' ':
+                r.player['x'] = newX
+                r.player['y'] = newY
+
+    # Color del suelo
+    screen.fill(pygame.Color("gray"))
+    # Color del cielo
+    screen.fill(pygame.Color(154, 202, 231), (int(r.width / 2), 0, int(r.width / 2),int(r.height / 2)))
+    screen.fill(pygame.Color("dimgray"), (int(r.width / 2), int(r.height / 2), int(r.width / 2),int(r.height / 2)))
+
     r.render()
 
+    screen.fill(pygame.Color("black"), (0,0,30,30))
+    screen.blit(updateFPS(), (0,0))
+    clock.tick(30)
     
-    pygame.display.flip()
+    pygame.display.update()
 
 pygame.quit()
