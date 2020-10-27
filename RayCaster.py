@@ -1,4 +1,5 @@
 import pygame
+import pygame_menu
 from math import cos, sin, pi
 
 
@@ -124,71 +125,86 @@ class Raycaster(object):
             self.screen.set_at( (halfWidth-1, i), BLACK)
 
 
-pygame.init()
-screen = pygame.display.set_mode((1000,500), pygame.DOUBLEBUF | pygame.HWACCEL)
-screen.set_alpha(None)
-clock = pygame.time.Clock()
-font = pygame.font.SysFont("Arial", 30)
+
+
 
 def updateFPS():
     fps = str(int(clock.get_fps()))
     fps = font.render(fps, 1, pygame.Color("white"))
     return fps
 
+pygame.init()
+screen = pygame.display.set_mode((1000,500), pygame.DOUBLEBUF | pygame.HWACCEL)
+pygame.display.set_caption("UVG Graficas por computadora")
+screen.set_alpha(None)
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("Arial", 30)
+
+
+def set_difficulty(value, difficulty):
+    # Do the job here !
+    pass
+
+
 r = Raycaster(screen)
 
 # r.setColor( (128,0,0) )
 r.load_map('map.txt')
 
-isRunning = True
-while isRunning:
-    for ev in pygame.event.get():
-        if ev.type == pygame.QUIT:
-            isRunning = False
-
-        newX = r.player['x']
-        newY = r.player['y']
-
-        if ev.type == pygame.KEYDOWN:
-            if ev.key == pygame.K_ESCAPE:
-                # Cierra el juego
+def start_the_game():
+    isRunning = True
+    while isRunning:
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
                 isRunning = False
-            elif ev.key == pygame.K_w or ev.key == pygame.K_UP:
-                newX += cos(r.player['angle'] * pi / 180) * r.stepSize
-                newY += sin(r.player['angle'] * pi / 180) * r.stepSize
-            elif ev.key == pygame.K_s or ev.key == pygame.K_DOWN:
-                newX -= cos(r.player['angle'] * pi / 180) * r.stepSize
-                newY -= sin(r.player['angle'] * pi / 180) * r.stepSize 
-            elif ev.key == pygame.K_a or ev.key == pygame.K_LEFT:
-                newX -= cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
-                newY -= sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
-            elif ev.key == pygame.K_d or ev.key == pygame.K_RIGHT:
-                newX += cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
-                newY += sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
-            elif ev.key == pygame.K_q or ev.key == pygame.K_z:
-                r.player['angle'] -= 5
-            elif ev.key == pygame.K_e or ev.key == pygame.K_x:
-                r.player['angle'] += 5
 
-            i = int(newX/r.blocksize)
-            j = int(newY/r.blocksize)
+            newX = r.player['x']
+            newY = r.player['y']
 
-            if r.map[j][i] == ' ':
-                r.player['x'] = newX
-                r.player['y'] = newY
+            if ev.type == pygame.KEYDOWN:
+                if ev.key == pygame.K_ESCAPE:
+                    # Cierra el juego
+                    isRunning = False
+                elif ev.key == pygame.K_w or ev.key == pygame.K_UP:
+                    newX += cos(r.player['angle'] * pi / 180) * r.stepSize
+                    newY += sin(r.player['angle'] * pi / 180) * r.stepSize
+                elif ev.key == pygame.K_s or ev.key == pygame.K_DOWN:
+                    newX -= cos(r.player['angle'] * pi / 180) * r.stepSize
+                    newY -= sin(r.player['angle'] * pi / 180) * r.stepSize 
+                elif ev.key == pygame.K_a or ev.key == pygame.K_LEFT:
+                    newX -= cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                    newY -= sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                elif ev.key == pygame.K_d or ev.key == pygame.K_RIGHT:
+                    newX += cos((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                    newY += sin((r.player['angle'] + 90) * pi / 180) * r.stepSize
+                elif ev.key == pygame.K_q or ev.key == pygame.K_z:
+                    r.player['angle'] -= 5
+                elif ev.key == pygame.K_e or ev.key == pygame.K_x:
+                    r.player['angle'] += 5
 
-    # Color del suelo
-    screen.fill(pygame.Color("gray"))
-    # Color del cielo
-    screen.fill(pygame.Color(154, 202, 231), (int(r.width / 2), 0, int(r.width / 2),int(r.height / 2)))
-    screen.fill(pygame.Color("dimgray"), (int(r.width / 2), int(r.height / 2), int(r.width / 2),int(r.height / 2)))
+                i = int(newX/r.blocksize)
+                j = int(newY/r.blocksize)
 
-    r.render()
+                if r.map[j][i] == ' ':
+                    r.player['x'] = newX
+                    r.player['y'] = newY
 
-    screen.fill(pygame.Color("black"), (0,0,30,30))
-    screen.blit(updateFPS(), (0,0))
-    clock.tick(30)
-    
-    pygame.display.update()
+        # Color del suelo
+        screen.fill(pygame.Color("gray"))
+        # Color del cielo
+        screen.fill(pygame.Color(154, 202, 231), (int(r.width / 2), 0, int(r.width / 2),int(r.height / 2)))
+        screen.fill(pygame.Color("dimgray"), (int(r.width / 2), int(r.height / 2), int(r.width / 2),int(r.height / 2)))
 
+        r.render()
+
+        screen.fill(pygame.Color("black"), (0,0,30,30))
+        screen.blit(updateFPS(), (0,0))
+        clock.tick(30)
+        
+        pygame.display.update()
+
+menu = pygame_menu.Menu(300, 400, 'Bienvenido', theme=pygame_menu.themes.THEME_DARK)
+menu.add_button('Play', start_the_game)
+menu.add_button('Quit', pygame_menu.events.EXIT)
+menu.mainloop(screen)
 pygame.quit()
