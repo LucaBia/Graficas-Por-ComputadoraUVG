@@ -1,5 +1,6 @@
 import pygame
 import pygame_menu
+from functools import partial
 from math import cos, sin, pi
 
 
@@ -18,6 +19,7 @@ textures = {
     '2' : pygame.image.load('Scifi_Wall_White.jpg'),
     '3' : pygame.image.load('Scifi_Wall_Copper.jpg'),
 }
+
 
 
 class Raycaster(object):
@@ -125,13 +127,13 @@ class Raycaster(object):
             self.screen.set_at( (halfWidth-1, i), BLACK)
 
 
-
-
-
 def updateFPS():
     fps = str(int(clock.get_fps()))
     fps = font.render(fps, 1, pygame.Color("white"))
     return fps
+
+def paint_background(surface):
+    surface.fill((0, 0, 0))
 
 pygame.init()
 screen = pygame.display.set_mode((1000,500), pygame.DOUBLEBUF | pygame.HWACCEL)
@@ -141,13 +143,7 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont("Arial", 30)
 
 
-def set_difficulty(value, difficulty):
-    # Do the job here !
-    pass
-
-
 r = Raycaster(screen)
-
 # r.setColor( (128,0,0) )
 r.load_map('map.txt')
 
@@ -203,8 +199,34 @@ def start_the_game():
         
         pygame.display.update()
 
-menu = pygame_menu.Menu(300, 400, 'Bienvenido', theme=pygame_menu.themes.THEME_DARK)
-menu.add_button('Play', start_the_game)
-menu.add_button('Quit', pygame_menu.events.EXIT)
-menu.mainloop(screen)
+# https://pygame-menu.readthedocs.io/en/latest/_source/widgets_image.html
+background_image = pygame_menu.baseimage.BaseImage(
+    image_path = 'background.jpg',
+    drawing_mode = pygame_menu.baseimage.IMAGE_MODE_FILL,
+)
+
+Theme = pygame_menu.themes.Theme
+
+mytheme = Theme(background_color = background_image,
+                title_shadow = True,
+                title_background_color = (116, 0, 1),
+                title_bar_style = pygame_menu.widgets.MENUBAR_STYLE_SIMPLE,
+                cursor_selection_color = (255, 255, 255),
+                widget_font = pygame_menu.font.FONT_HELVETICA,
+                menubar_close_button = False,
+                widget_alignment = pygame_menu.locals.ALIGN_CENTER,
+                title_offset = (190, 0))
+
+menu = pygame_menu.Menu(400, 600, 
+                        title = 'Harry Potter', 
+                        theme = mytheme)
+menu.add_button('Jugar', start_the_game)
+menu.add_button('Salir', pygame_menu.events.EXIT)
+menu.add_image('HP_logo.png', scale=(0.5, 0.5))
+paint_background(screen)
+# menu.mainloop(screen)
+menu.mainloop(surface=screen,
+              bgfun=partial(paint_background, screen),
+            #   disable_loop=test,
+              fps_limit=30.0)
 pygame.quit()
